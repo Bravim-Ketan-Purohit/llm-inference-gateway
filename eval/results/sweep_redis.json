@@ -1,0 +1,192 @@
+{
+  "store": "redis",
+  "embedding_model": "all-MiniLM-L6-v2",
+  "total_paraphrase_pairs": 120,
+  "total_near_miss_pairs": 120,
+  "recommended_tau": 0.99,
+  "recommended_hit_rate": 0.0,
+  "recommended_false_hit_rate": 0.0833,
+  "duration_seconds": 32.58,
+  "sweep": [
+    {
+      "tau": 0.8,
+      "hit_rate": 0.7667,
+      "false_hit_rate": 0.6083,
+      "true_positives": 92,
+      "false_negatives": 28,
+      "true_negatives": 47,
+      "false_positives": 73
+    },
+    {
+      "tau": 0.81,
+      "hit_rate": 0.75,
+      "false_hit_rate": 0.6083,
+      "true_positives": 90,
+      "false_negatives": 30,
+      "true_negatives": 47,
+      "false_positives": 73
+    },
+    {
+      "tau": 0.82,
+      "hit_rate": 0.675,
+      "false_hit_rate": 0.5833,
+      "true_positives": 81,
+      "false_negatives": 39,
+      "true_negatives": 50,
+      "false_positives": 70
+    },
+    {
+      "tau": 0.83,
+      "hit_rate": 0.65,
+      "false_hit_rate": 0.55,
+      "true_positives": 78,
+      "false_negatives": 42,
+      "true_negatives": 54,
+      "false_positives": 66
+    },
+    {
+      "tau": 0.84,
+      "hit_rate": 0.6167,
+      "false_hit_rate": 0.5083,
+      "true_positives": 74,
+      "false_negatives": 46,
+      "true_negatives": 59,
+      "false_positives": 61
+    },
+    {
+      "tau": 0.85,
+      "hit_rate": 0.525,
+      "false_hit_rate": 0.4833,
+      "true_positives": 63,
+      "false_negatives": 57,
+      "true_negatives": 62,
+      "false_positives": 58
+    },
+    {
+      "tau": 0.86,
+      "hit_rate": 0.475,
+      "false_hit_rate": 0.45,
+      "true_positives": 57,
+      "false_negatives": 63,
+      "true_negatives": 66,
+      "false_positives": 54
+    },
+    {
+      "tau": 0.87,
+      "hit_rate": 0.4167,
+      "false_hit_rate": 0.4083,
+      "true_positives": 50,
+      "false_negatives": 70,
+      "true_negatives": 71,
+      "false_positives": 49
+    },
+    {
+      "tau": 0.88,
+      "hit_rate": 0.3833,
+      "false_hit_rate": 0.3917,
+      "true_positives": 46,
+      "false_negatives": 74,
+      "true_negatives": 73,
+      "false_positives": 47
+    },
+    {
+      "tau": 0.89,
+      "hit_rate": 0.3583,
+      "false_hit_rate": 0.3667,
+      "true_positives": 43,
+      "false_negatives": 77,
+      "true_negatives": 76,
+      "false_positives": 44
+    },
+    {
+      "tau": 0.9,
+      "hit_rate": 0.2833,
+      "false_hit_rate": 0.3333,
+      "true_positives": 34,
+      "false_negatives": 86,
+      "true_negatives": 80,
+      "false_positives": 40
+    },
+    {
+      "tau": 0.91,
+      "hit_rate": 0.2,
+      "false_hit_rate": 0.3167,
+      "true_positives": 24,
+      "false_negatives": 96,
+      "true_negatives": 82,
+      "false_positives": 38
+    },
+    {
+      "tau": 0.92,
+      "hit_rate": 0.1917,
+      "false_hit_rate": 0.275,
+      "true_positives": 23,
+      "false_negatives": 97,
+      "true_negatives": 87,
+      "false_positives": 33
+    },
+    {
+      "tau": 0.93,
+      "hit_rate": 0.15,
+      "false_hit_rate": 0.2417,
+      "true_positives": 18,
+      "false_negatives": 102,
+      "true_negatives": 91,
+      "false_positives": 29
+    },
+    {
+      "tau": 0.94,
+      "hit_rate": 0.075,
+      "false_hit_rate": 0.225,
+      "true_positives": 9,
+      "false_negatives": 111,
+      "true_negatives": 93,
+      "false_positives": 27
+    },
+    {
+      "tau": 0.95,
+      "hit_rate": 0.05,
+      "false_hit_rate": 0.2,
+      "true_positives": 6,
+      "false_negatives": 114,
+      "true_negatives": 96,
+      "false_positives": 24
+    },
+    {
+      "tau": 0.96,
+      "hit_rate": 0.0333,
+      "false_hit_rate": 0.1667,
+      "true_positives": 4,
+      "false_negatives": 116,
+      "true_negatives": 100,
+      "false_positives": 20
+    },
+    {
+      "tau": 0.97,
+      "hit_rate": 0.0083,
+      "false_hit_rate": 0.15,
+      "true_positives": 1,
+      "false_negatives": 119,
+      "true_negatives": 102,
+      "false_positives": 18
+    },
+    {
+      "tau": 0.98,
+      "hit_rate": 0.0083,
+      "false_hit_rate": 0.125,
+      "true_positives": 1,
+      "false_negatives": 119,
+      "true_negatives": 105,
+      "false_positives": 15
+    },
+    {
+      "tau": 0.99,
+      "hit_rate": 0.0,
+      "false_hit_rate": 0.0833,
+      "true_positives": 0,
+      "false_negatives": 120,
+      "true_negatives": 110,
+      "false_positives": 10
+    }
+  ]
+}
