@@ -268,3 +268,114 @@ the number trustworthy.
 
 Any unchecked row ⇒ `Bravim_Purohit_Backend_Engineer.tex:126` stays commented and both `[XX]`s stay
 bracketed.
+
+---
+
+## 13. Extended stack (added 2026-08-17)
+
+### 13.1 TensorRT-LLM as a second inference backend
+
+vLLM stays primary (it's the resume commitment). TensorRT-LLM lands behind the same `Backend` protocol, and
+the point is the comparison — these two are the real production choice in 2026, and having measured both is
+worth more than having an opinion about both.
+
+Measure on the **same GPU, same session, same model**, or the comparison is worthless:
+
+| Axis | Why it matters |
+| --- | --- |
+| TTFT / ITL / tokens-per-sec at concurrency 1, 8, 32 | TensorRT-LLM's advantage is usually at low concurrency; vLLM's paged attention wins as batching saturates |
+| engine build time | TensorRT-LLM compiles ahead of time — minutes to hours. That's a real deployment cost vLLM doesn't have |
+| speculative decoding support + acceptance rate | both support it; the implementations differ |
+| memory footprint at equal throughput | |
+| output equivalence vs greedy baseline | a faster backend that changes outputs is not a faster backend |
+
+Write it up in `docs/BACKENDS.md`. Be explicit that the engine-build step makes TensorRT-LLM worse for
+iteration and better for a pinned production model — that trade is the interesting part.
+
+### 13.2 pgvector as a second semantic-cache store
+
+Redis Stack stays primary. pgvector lands behind a `CacheStore` protocol, and the comparison is genuinely
+informative because the two make opposite trades:
+
+- **Redis Stack** — in-memory HNSW, sub-millisecond lookup, cache is volatile by nature (which is fine).
+- **pgvector** — durable, transactional, joins against usage/accounting rows in the same query, and it
+  collapses two services into one. Slower per lookup, and IVFFlat vs HNSW index choice matters.
+
+Report: p95 cache-lookup latency, recall against a brute-force ground truth at the operating τ, memory/disk
+footprint, and cold-start behaviour after a restart. That last one is the honest argument for pgvector — a
+Redis cache restart means a fully cold cache and a cost spike, and being able to quantify that is a real
+operational insight.
+
+Run the §4 threshold sweep against **both** stores. If the false-hit rate differs between them at the same
+τ, the index configuration differs — find out which, and say so.
+
+### 13.3 DynamoDB for usage and accounting
+
+Usage records are high-write, append-only, time-ordered, queried by key and range, and never updated. That
+is the shape DynamoDB is actually for, so the usage log moves there while Postgres/pgvector keeps the
+relational and vector work:
+
+- PK `api_key`, SK `timestamp#request_id`. GSI on `model#timestamp` for per-model rollups.
+- On-demand billing; TTL attribute for automatic expiry of raw records after N days.
+- Batch writes, and **never a synchronous write on the request path** — buffer and flush async, because
+  billing telemetry must not add latency to inference.
+
+The README should note Cassandra as the self-hosted equivalent and why DynamoDB was chosen here (already on
+AWS, no cluster to operate, on-demand pricing suits bursty benchmark traffic).
+
+### 13.4 llama.cpp, continuous batching, CUDA profiling
+
+- **llama.cpp** — a second local backend beside Ollama (which wraps it). Direct use gives control over GGUF
+  quantisation level, so you can measure the quantisation/quality trade on Metal. Useful because it's the
+  one axis you *can* measure without renting a GPU.
+- **Continuous batching** becomes an explicit measured axis, not a word in a README: sweep concurrency 1 →
+  64 and plot throughput and per-request latency together. The crossover — where added concurrency stops
+  buying throughput and only adds latency — is the number an infrastructure interviewer wants, and it's
+  also where speculative decoding's benefit disappears. Same chart, two findings.
+- **CUDA memory profiling** during the GPU session: `nvidia-smi` sampling, `torch.profiler` or `nsys` for a
+  representative run. Report KV-cache size vs batch size vs context length, and the point where memory
+  forces a batch-size cap. This is what makes "I served models" concrete.
+
+### 13.5 OpenRouter fallback tier
+
+The routing layer gains a final fallback: if every self-hosted backend is unhealthy or the circuit breaker
+is open, route to OpenRouter. Real gateways need an escape hatch, and it makes the circuit breaker
+demonstrable — kill the vLLM backend mid-load-test and watch traffic shift with no dropped requests.
+
+Requirements: fallback is explicit per-key policy, never silent; the response records which backend served
+it; cost accounting distinguishes self-hosted from API spend, since the cost claim depends on that split.
+
+### 13.6 OpenTelemetry
+
+Spans: `auth`, `cache_lookup_exact`, `cache_lookup_semantic`, `embed`, `route`, `backend_call`, `stream`,
+`cache_writeback`. Attributes: arm, cache hit/miss, similarity score, τ, backend, model, tokens, cost,
+acceptance rate.
+
+This makes the §1 latency breakdown a **measured attribution** rather than an assertion — you can point at a
+trace and show that a cache hit spends 4 ms in embedding and 1 ms in lookup, while a miss spends 380 ms in
+the backend. The ops console's latency-breakdown bars read from these spans.
+
+Tracing must be **off during benchmark runs**, and its overhead measured once and recorded. Instrumenting a
+latency benchmark with an exporter enabled is a way to measure your exporter.
+
+## 14. Additional milestones
+
+- **M7 Second inference backend.** TensorRT-LLM behind the `Backend` protocol; both engines measured on one
+  GPU session across concurrency 1/8/32; engine build time recorded; output equivalence verified;
+  `docs/BACKENDS.md` written.
+- **M8 Cache-store comparison.** pgvector behind `CacheStore`; §4 threshold sweep run against both stores;
+  latency, recall, footprint, and cold-start reported. DynamoDB usage log live with async flush.
+- **M9 Batching + profiling.** Concurrency sweep 1→64 with the throughput/latency crossover identified;
+  CUDA memory profile committed; llama.cpp quantisation trade measured on Metal.
+- **M10 Resilience + observability.** OpenRouter fallback with a demonstrated failover under load; OTel end
+  to end with measured overhead documented.
+
+### Honest-claims additions
+
+| Claim | Status | Backed by |
+| --- | --- | --- |
+| serving stack is a decision, not a default | ☐ | vLLM vs TensorRT-LLM on one GPU, `docs/BACKENDS.md` |
+| cache store is a decision | ☐ | Redis vs pgvector: latency, recall, cold start |
+| continuous batching understood | ☐ | concurrency sweep with the crossover point identified |
+| GPU memory behaviour understood | ☐ | KV-cache vs batch vs context profile |
+| graceful degradation | ☐ | backend killed mid-load-test, zero dropped requests |

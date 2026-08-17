@@ -122,3 +122,39 @@ Milestones per `SPEC.md` §11. CI green on push; `terraform fmt`/`validate` run 
 Report honestly, per arm and per metric: "arm B vs A on mixed/35 % repeat: TTFT p95 −71 %, cost −31 %;
 arm C vs A: ITL −28 % at concurrency 1, −9 % at concurrency 16, acceptance 0.63" is the deliverable. A
 single blended percentage is not.
+
+---
+
+## Extended stack additions (2026-08-17)
+
+See `SPEC.md` §13–14. Gains: **TensorRT-LLM** as a second backend, **pgvector** as a second cache store,
+**DynamoDB** for usage accounting, **llama.cpp**, **CUDA profiling**, an **OpenRouter fallback tier**,
+**OpenTelemetry**.
+
+**New ports** (same 7500–7599 block): `7507` pgvector Postgres · `7508` llama.cpp server ·
+`7509` DynamoDB Local · `7510` Jaeger UI · `7511` OTel Collector gRPC.
+
+**New prerequisites:** `pgvector` + `psycopg`, `boto3`, `opentelemetry-sdk` + FastAPI instrumentation.
+`llama.cpp` via `brew install llama.cpp` for the Metal quantisation work. **TensorRT-LLM stays out of local
+dependencies entirely** — it is CUDA-only and belongs in the EC2 image behind the `Backend` protocol, same as
+vLLM. Nothing may import either at module scope. DynamoDB Local via Docker so no AWS account is needed for dev.
+
+**New hard rules:**
+
+9. **Backend comparisons happen on one GPU, one session, one model.** vLLM vs TensorRT-LLM measured on
+   different instances or different days is not a comparison. Include engine build time — it's a real cost
+   TensorRT-LLM has and vLLM doesn't.
+10. **Verify output equivalence for every new backend** against the greedy baseline. A faster backend that
+    changes outputs is not a faster backend, it's a different model.
+11. **Run the §4 threshold sweep against both cache stores.** If false-hit rate differs at the same τ, the
+    index configuration differs — find out which and say so. Don't average them.
+12. **Usage writes are never synchronous on the request path.** Buffer and flush async. Billing telemetry must
+    not add latency to inference.
+13. **Benchmarks run with exporters off**; measure tracing overhead once and record it. Instrumenting a latency
+    benchmark measures the exporter.
+14. **The OpenRouter fallback is explicit per-key policy, never silent.** Every response records which backend
+    served it, and cost accounting keeps self-hosted and API spend separate — the cost claim depends on that
+    split.
+
+**New stop-and-ask:** before each GPU session (state the estimated cost and hours), and if TensorRT-LLM's
+engine build turns out to need more GPU time than the benchmark itself.
