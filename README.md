@@ -129,5 +129,11 @@ Where `SPEC.md` and any other document disagree, `SPEC.md` wins.
 
 ## Status
 
-Scaffold — specified, not yet implemented. This repo reserves ports **7500–7599**; up to eight sibling
+Implemented, with a published negative result. The gateway, semantic cache, embedding and backend
+adapters, rate limits, routing, and circuit breaker are all built. The committed similarity sweep
+([`eval/results/sweep_redis.json`](eval/results/sweep_redis.json)) found that across the whole threshold
+range, adversarial near-miss query pairs sit *closer* in embedding space than genuine paraphrases do — so no
+single τ makes this cache both useful and safe (τ=0.86 gives a 47.5% hit rate against a 45% false-hit rate).
+That is a real finding about semantic caching, and it is the most interesting thing in this repo. Latency and
+cost reductions remain unmeasured: speculative decoding needs a GPU host. This repo reserves ports **7500–7599**; up to eight sibling
 projects may run at the same time, so nothing here binds outside that block.
